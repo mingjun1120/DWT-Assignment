@@ -103,16 +103,15 @@ SELECT MIN(usersID), MAX(usersID) FROM users;
 
 -- Transaction per year and Total 6 years
 SELECT SUM(No_of_Rows) AS Trans_Per_Year, SUM(No_of_Rows)*6 AS Total_6_Years
-FROM(
-     SELECT Num_Gen, Num_Gen*Occurence AS No_of_Rows
-     FROM(
-          SELECT Num_Gen, COUNT(*) AS Occurence 
-          FROM(
-               SELECT TRUNC(DBMS_RANDOM.value(90,450)) AS Num_Gen 
-               FROM orders)
-          GROUP BY Num_Gen
-          ORDER BY 1
-     )    
+FROM
+(
+   SELECT Num_Gen, Num_Gen*Occurence AS No_of_Rows
+   FROM(
+      SELECT Num_Gen, COUNT(*) AS Occurence 
+      FROM(
+         SELECT TRUNC(DBMS_RANDOM.value(90,450)) AS Num_Gen 
+         FROM orders)
+      GROUP BY Num_Gen
+      ORDER BY 1
+   )    
 );
-
-
