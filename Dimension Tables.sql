@@ -41,17 +41,16 @@ CREATE TABLE DIM_Promotion
  promotionID    NUMBER(5)   NOT NULL,
  promoteCode    VARCHAR(15) NOT NULL,
  discountRate   NUMBER(2)   NOT NULL,
- status         VARCHAR(10) NOT NULL,
 PRIMARY KEY(promotion_key)
 );
 
 --ETL, consider some transformation of the data
 INSERT INTO DIM_Promotion
-SELECT dim_promotion_seq.nextval, PromotionId, PromoteCode, DiscountRate, UPPER(Status)
+SELECT dim_promotion_seq.nextval, PromotionId, PromoteCode, DiscountRate
 FROM Promotion;
 
 -- Select to see the data
-SELECT dim_promotion_seq.nextval, PromotionId, PromoteCode, DiscountRate, UPPER(Status)
+SELECT dim_promotion_seq.nextval, PromotionId, PromoteCode, DiscountRate
 FROM Promotion;
 
 
