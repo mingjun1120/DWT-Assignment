@@ -1,1 +1,2 @@
 vscode://vscode.github-authentication/did-authenticate?windowid=1&code=1009c0463521bfd1ec98&state=eea3f52d-e5ad-4885-b78e-961697c1fbf7
+vscode://vscode.github-authentication/did-authenticate?windowid=1&code=9cd643018416e365dd29&state=18f7f41e-2e5c-45af-b5ea-abada8d560c2
