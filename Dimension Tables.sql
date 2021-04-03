@@ -72,7 +72,7 @@ CREATE TABLE DIM_Restaurant
  rest_name          VARCHAR(60)   NOT NULL,
  rest_TypeName      VARCHAR(20)   NOT NULL,
  rest_city          VARCHAR(30)   NOT NULL,
- rst_state          VARCHAR(20)   NOT NULL,
+ rest_state          VARCHAR(20)   NOT NULL,
 PRIMARY KEY(restaurant_key)
 );
 
