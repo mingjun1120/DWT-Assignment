@@ -72,7 +72,7 @@ CREATE TABLE DIM_Restaurant
  rest_TypeName      VARCHAR(20)   NOT NULL,
  rest_city          VARCHAR(30)   NOT NULL,
  rest_state          VARCHAR(20)   NOT NULL,
-PRIMARY KEY(restaurant_key)
+ PRIMARY KEY(restaurant_key)
 );
 
 --ETL, consider some transformation of the
@@ -141,7 +141,7 @@ DECLARE
 BEGIN
 -- set the start and end date e.g. date from 1 Jan 2015 to 01 Mar 2021
    start_date := TO_DATE('01/01/2015','dd/mm/yyyy');
-   end_date   := TO_DATE('24/03/2021','dd/mm/yyyy');
+   end_date   := TO_DATE('03/04/2021','dd/mm/yyyy');
    v_holiday_ind := 'N';
 
    WHILE (start_date <= end_date) LOOP
@@ -230,6 +230,43 @@ SELECT M.MenuListId, M.Name, M.PricePerUnit, M.UnitSold, (M.PricePerUnit * M.Uni
 FROM MenuList M, Category C, TimeMeal TM, itemCombo IC, Food F
 WHERE (M.categoryID = C.categoryID) AND (M.TimeMealId = TM.TimeMealId)
       AND (IC.MenuListId = M.MenuListId) AND (IC.FoodId = F.FoodId);
+
+
+
+
+----------------------------------Fact Table-----------------------------------------------
+DROP TABLE sales_fact;
+CREATE TABLE SALES_FACT
+(date_key       NUMBER      NOT NULL,
+ promotion_key  NUMBER      NOT NULL,
+ users_key      NUMBER      NOT NULL,
+ restaurant_key NUMBER      NOT NULL,
+ menulist_key   NUMBER      NOT NULL,
+ orderid        NUMBER     NOT NULL,
+ amount         NUMBER(7,2)   DEFAULT 0.0,
+ discount       NUMBER(7,2)   DEFAULT 0.0,
+ Quantity       NUMBER(3)     NOT NULL,       
+PRIMARY KEY(date_key, promotion_key, users_key, restaurant_key, menulist_key, orderid)
+);
+
+INSERT INTO Sales_Fact
+SELECT date_key, promotion_key, users_key,restaurant_key, menulist_key, A.orderid, A.amount,A.discount, B.Quantity
+FROM DIM_Date D
+     JOIN orders A
+     ON trunc(D.cal_date) = trunc(A.orderDateTime)
+     JOIN orderDetails B
+     ON A.orderID = B.orderID
+     JOIN DIM_menulist C
+     ON B.menuListID = C.menuListID
+     JOIN Dim_Users D
+     ON A.usersID = D.usersID
+     JOIN DIM_Restaurant E
+     ON A.BranchID = E.rest_branchID
+     JOIN DIM_Promotion P
+     ON A.promotionID = P.promotionID;
+
+-- ALTER DATABASE DATAFILE 'C:\ORACLEXE\APP\ORACLE\ORADATA\XE\SYSTEM.DBF' AUTOEXTEND ON NEXT 1M MAXSIZE 1024M;
+
 
 
 
@@ -341,57 +378,3 @@ WHERE (M.categoryID = C.categoryID) AND (M.TimeMealId = TM.TimeMealId)
 -- -- Select to see the data
 -- SELECT dim_itemCombo_seq.nextval, MenuListId,FoodId,Quantity
 -- FROM DIM_itemCombo;
-
-----------------------------------Fact Table-----------------------------------------------
-drop table sales_fact;
-create table SALES_FACT
-(date_key       NUMBER      NOT NULL,
- promotion_key  NUMBER      NOT NULL,
- users_key      NUMBER      NOT NULL,
- restaurant_key NUMBER      NOT NULL,
- menulist_key   NUMBER      NOT NULL,
- orderid        NUMBER     NOT NULL,
- amount         NUMBER(7,2)   DEFAULT 0.0,
- discount       NUMBER(7,2)   DEFAULT 0.0,
- Quantity       NUMBER(3)     NOT NULL,       
-primary key(date_key, promotion_key, users_key,restaurant_key,menulist_key
-            ,orderid)
-);
-
-insert into Sales_Fact
-select date_key, promotion_key, users_key,restaurant_key,menulist_key
-       ,A.orderid,A.amount,A.discount,B.Quantity
-from DIM_Date D
-     join orders A
-     on trunc(D.cal_date) = trunc(A.orderDateTime)
-     join orderDetails B
-     on A.orderID = B.orderID
-     join DIM_menulist C
-     on B.menuListID = C.menuListID
-     join Dim_Users D
-     on A.usersID = D.usersID
-     join DIM_Restaurant E
-     on A.BranchID = E.rest_branchID
-     join DIM_Promotion P
-     on A.promotionID = P.promotionID;
-
-
-
-select orderNumber, lineTotal, date_key
-from sales_fact;
-
-select B.quantityOrdered, B.priceEach, (B.quantityOrdered*B.priceEach) as LineTotal,
-       A.orderNumber, B.orderLineNumber
-from Dim_Date D
-     join orders A
-     on trunc(D.cal_date) = trunc(A.orderDate)
-     join orderDetails B
-     on A.orderNumber = B.orderNumber
-     join Dim_Products P
-     on B.productCode = P.productCode
-     join Dim_Customers C
-     on A.customerNumber = C.customerNumber
-     join Dim_Employees E
-     on C.staffNo = E.employeeNumber
-     join Dim_Offices O
-     on E.officeCode = O.officeCode;
