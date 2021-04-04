@@ -234,110 +234,164 @@ WHERE (M.categoryID = C.categoryID) AND (M.TimeMealId = TM.TimeMealId)
 
 
 
-------------------------------------------- DIMENSION Category --------------------------------
--- Create dimension user sequence
-DROP SEQUENCE dim_category_seq;
-CREATE SEQUENCE dim_category_seq
-START WITH 10001
-INCREMENT BY 1;
+-- ------------------------------------------- DIMENSION Category --------------------------------
+-- -- Create dimension user sequence
+-- DROP SEQUENCE dim_category_seq;
+-- CREATE SEQUENCE dim_category_seq
+-- START WITH 10001
+-- INCREMENT BY 1;
 
-DROP TABLE DIM_category;
-CREATE TABLE DIM_category
-(category_key  NUMBER      NOT NULL,
- CategoryId  VARCHAR(6)    NOT NULL,
- Name        VARCHAR(20)   NOT NULL,
-PRIMARY KEY(category_key)
+-- DROP TABLE DIM_category;
+-- CREATE TABLE DIM_category
+-- (category_key  NUMBER      NOT NULL,
+--  CategoryId  VARCHAR(6)    NOT NULL,
+--  Name        VARCHAR(20)   NOT NULL,
+-- PRIMARY KEY(category_key)
+-- );
+
+-- --ETL, consider some transformation of the data
+-- INSERT INTO DIM_category
+-- SELECT dim_category_seq.nextval, CategoryId,Name
+-- FROM category;
+
+-- -- Select to see the data
+-- SELECT dim_category_seq.nextval, CategoryId,Name
+-- FROM dim_category;
+
+
+
+
+-- ------------------------------------------- DIMENSION TimeMeal --------------------------------
+-- -- Create dimension user sequence
+-- DROP SEQUENCE dim_TimeMeal_seq;
+-- CREATE SEQUENCE dim_TimeMeal_seq
+-- START WITH 10001
+-- INCREMENT BY 1;
+
+-- DROP TABLE DIM_TimeMeal;
+-- CREATE TABLE DIM_TimeMeal
+-- (TimeMeal_key  NUMBER      NOT NULL,
+--  TimeMealId  VARCHAR(7)    NOT NULL,
+--  TimeSection     VARCHAR(20)   NOT NULL,
+--  StartTime   TIMESTAMP,
+--  EndTime     TIMESTAMP,
+-- PRIMARY KEY(TimeMeal_key)
+-- );
+
+-- --ETL, consider some transformation of the data
+-- INSERT INTO DIM_TimeMeal
+-- SELECT dim_TimeMeal_seq.nextval, TimeMealId,TimeSection,StartTime,EndTime
+-- FROM TimeMeal;
+
+-- -- Select to see the data
+-- SELECT dim_TimeMeal_seq.nextval, TimeMealId,TimeSection,StartTime,EndTime
+-- FROM dim_TimeMeal;
+
+
+
+
+-- ------------------------------------------- DIMENSION FOOD --------------------------------
+-- -- Create dimension user sequence
+-- DROP SEQUENCE dim_food_seq;
+-- CREATE SEQUENCE dim_food_seq
+-- START WITH 10001
+-- INCREMENT BY 1;
+
+-- DROP TABLE DIM_food;
+-- CREATE TABLE DIM_food
+-- ( food_key  NUMBER      NOT NULL,
+--   FoodId         NUMBER(5)     NOT NULL,
+--   Name           VARCHAR(100)  NOT NULL,
+-- PRIMARY KEY(food_key)
+-- );
+
+-- --ETL, consider some transformation of the data
+-- INSERT INTO DIM_food
+-- SELECT dim_food_seq.nextval, foodId,Name
+-- FROM food;
+
+-- -- Select to see the data
+-- SELECT dim_food_seq.nextval, foodId,Name
+-- FROM DIM_food;
+
+
+
+
+-- ------------------------------------------- DIMENSION itemCombo --------------------------------
+-- -- Create dimension user sequence
+-- DROP SEQUENCE dim_itemCombo_seq;
+-- CREATE SEQUENCE dim_itemCombo_seq
+-- START WITH 10001
+-- INCREMENT BY 1;
+
+-- DROP TABLE DIM_itemCombo;
+-- CREATE TABLE DIM_itemCombo
+-- ( itemCombo_key  NUMBER      NOT NULL,
+--   MenuListId     NUMBER(5)    NOT NULL,
+--   FoodId         NUMBER(5)    NOT NULL,
+--   Quantity       NUMBER(4)    NOT NULL,
+-- PRIMARY KEY(itemCombo_key)
+-- );
+
+-- --ETL, consider some transformation of the data
+-- INSERT INTO DIM_itemCombo
+-- SELECT dim_itemCombo_seq.nextval, MenuListId,FoodId,Quantity
+-- FROM itemCombo;
+
+-- -- Select to see the data
+-- SELECT dim_itemCombo_seq.nextval, MenuListId,FoodId,Quantity
+-- FROM DIM_itemCombo;
+
+----------------------------------Fact Table-----------------------------------------------
+drop table sales_fact;
+create table SALES_FACT
+(date_key       NUMBER      NOT NULL,
+ promotion_key  NUMBER      NOT NULL,
+ users_key      NUMBER      NOT NULL,
+ restaurant_key NUMBER      NOT NULL,
+ menulist_key   NUMBER      NOT NULL,
+ orderid        NUMBER     NOT NULL,
+ amount         NUMBER(7,2)   DEFAULT 0.0,
+ discount       NUMBER(7,2)   DEFAULT 0.0,
+ Quantity       NUMBER(3)     NOT NULL,       
+primary key(date_key, promotion_key, users_key,restaurant_key,menulist_key
+            ,orderid)
 );
 
---ETL, consider some transformation of the data
-INSERT INTO DIM_category
-SELECT dim_category_seq.nextval, CategoryId,Name
-FROM category;
-
--- Select to see the data
-SELECT dim_category_seq.nextval, CategoryId,Name
-FROM dim_category;
-
-
-
-
-------------------------------------------- DIMENSION TimeMeal --------------------------------
--- Create dimension user sequence
-DROP SEQUENCE dim_TimeMeal_seq;
-CREATE SEQUENCE dim_TimeMeal_seq
-START WITH 10001
-INCREMENT BY 1;
-
-DROP TABLE DIM_TimeMeal;
-CREATE TABLE DIM_TimeMeal
-(TimeMeal_key  NUMBER      NOT NULL,
- TimeMealId  VARCHAR(7)    NOT NULL,
- TimeSection     VARCHAR(20)   NOT NULL,
- StartTime   TIMESTAMP,
- EndTime     TIMESTAMP,
-PRIMARY KEY(TimeMeal_key)
-);
-
---ETL, consider some transformation of the data
-INSERT INTO DIM_TimeMeal
-SELECT dim_TimeMeal_seq.nextval, TimeMealId,TimeSection,StartTime,EndTime
-FROM TimeMeal;
-
--- Select to see the data
-SELECT dim_TimeMeal_seq.nextval, TimeMealId,TimeSection,StartTime,EndTime
-FROM dim_TimeMeal;
+insert into Sales_Fact
+select date_key, promotion_key, users_key,restaurant_key,menulist_key
+       ,A.orderid,A.amount,A.discount,B.Quantity
+from DIM_Date D
+     join orders A
+     on trunc(D.cal_date) = trunc(A.orderDateTime)
+     join orderDetails B
+     on A.orderID = B.orderID
+     join DIM_menulist C
+     on B.menuListID = C.menuListID
+     join Dim_Users D
+     on A.usersID = D.usersID
+     join DIM_Restaurant E
+     on A.BranchID = E.rest_branchID
+     join DIM_Promotion P
+     on A.promotionID = P.promotionID;
 
 
 
+select orderNumber, lineTotal, date_key
+from sales_fact;
 
-------------------------------------------- DIMENSION FOOD --------------------------------
--- Create dimension user sequence
-DROP SEQUENCE dim_food_seq;
-CREATE SEQUENCE dim_food_seq
-START WITH 10001
-INCREMENT BY 1;
-
-DROP TABLE DIM_food;
-CREATE TABLE DIM_food
-( food_key  NUMBER      NOT NULL,
-  FoodId         NUMBER(5)     NOT NULL,
-  Name           VARCHAR(100)  NOT NULL,
-PRIMARY KEY(food_key)
-);
-
---ETL, consider some transformation of the data
-INSERT INTO DIM_food
-SELECT dim_food_seq.nextval, foodId,Name
-FROM food;
-
--- Select to see the data
-SELECT dim_food_seq.nextval, foodId,Name
-FROM DIM_food;
-
-
-
-
-------------------------------------------- DIMENSION itemCombo --------------------------------
--- Create dimension user sequence
-DROP SEQUENCE dim_itemCombo_seq;
-CREATE SEQUENCE dim_itemCombo_seq
-START WITH 10001
-INCREMENT BY 1;
-
-DROP TABLE DIM_itemCombo;
-CREATE TABLE DIM_itemCombo
-( itemCombo_key  NUMBER      NOT NULL,
-  MenuListId     NUMBER(5)    NOT NULL,
-  FoodId         NUMBER(5)    NOT NULL,
-  Quantity       NUMBER(4)    NOT NULL,
-PRIMARY KEY(itemCombo_key)
-);
-
---ETL, consider some transformation of the data
-INSERT INTO DIM_itemCombo
-SELECT dim_itemCombo_seq.nextval, MenuListId,FoodId,Quantity
-FROM itemCombo;
-
--- Select to see the data
-SELECT dim_itemCombo_seq.nextval, MenuListId,FoodId,Quantity
-FROM DIM_itemCombo;
+select B.quantityOrdered, B.priceEach, (B.quantityOrdered*B.priceEach) as LineTotal,
+       A.orderNumber, B.orderLineNumber
+from Dim_Date D
+     join orders A
+     on trunc(D.cal_date) = trunc(A.orderDate)
+     join orderDetails B
+     on A.orderNumber = B.orderNumber
+     join Dim_Products P
+     on B.productCode = P.productCode
+     join Dim_Customers C
+     on A.customerNumber = C.customerNumber
+     join Dim_Employees E
+     on C.staffNo = E.employeeNumber
+     join Dim_Offices O
+     on E.officeCode = O.officeCode;
