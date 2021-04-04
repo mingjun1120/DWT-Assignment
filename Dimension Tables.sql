@@ -377,21 +377,21 @@ from DIM_Date D
 
 
 
-select orderNumber, lineTotal, date_key
-from sales_fact;
+-- select orderNumber, lineTotal, date_key
+-- from sales_fact;
 
-select B.quantityOrdered, B.priceEach, (B.quantityOrdered*B.priceEach) as LineTotal,
-       A.orderNumber, B.orderLineNumber
-from Dim_Date D
-     join orders A
-     on trunc(D.cal_date) = trunc(A.orderDate)
-     join orderDetails B
-     on A.orderNumber = B.orderNumber
-     join Dim_Products P
-     on B.productCode = P.productCode
-     join Dim_Customers C
-     on A.customerNumber = C.customerNumber
-     join Dim_Employees E
-     on C.staffNo = E.employeeNumber
-     join Dim_Offices O
-     on E.officeCode = O.officeCode;
+-- select B.quantityOrdered, B.priceEach, (B.quantityOrdered*B.priceEach) as LineTotal,
+--        A.orderNumber, B.orderLineNumber
+-- from Dim_Date D
+--      join orders A
+--      on trunc(D.cal_date) = trunc(A.orderDate)
+--      join orderDetails B
+--      on A.orderNumber = B.orderNumber
+--      join Dim_Products P
+--      on B.productCode = P.productCode
+--      join Dim_Customers C
+--      on A.customerNumber = C.customerNumber
+--      join Dim_Employees E
+--      on C.staffNo = E.employeeNumber
+--      join Dim_Offices O
+--      on E.officeCode = O.officeCode;
