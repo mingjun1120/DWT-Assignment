@@ -109,3 +109,43 @@ CREATE TABLE orderdetails(
 );
 
 
+------------------------------------------------------ SPOOL --------------------------------------------------------
+spool C:\Users\Jun\Downloads\Sample_Run.txt
+
+host hostname
+
+SET linesize 190
+SET pagesize 50
+
+column machine FORMAT a30
+column username FORMAT a30
+SELECT sid, serial#, user#, username, ownerid, server, machine
+FROM   v$session;
+
+DESC productLines
+DESC products
+DESC offices
+DESC employees
+DESC customers
+DESC orders
+DESC orderdetails
+
+column table_name FORMAT a20
+
+SELECT table_name, tablespace_name 
+FROM   user_tables;
+
+column OWNER FORMAT a15
+column constraint_name FORMAT a27
+column search_condition FORMAT a89
+column column_name FORMAT a25
+
+SELECT   A.OWNER, A.CONSTRAINT_NAME, A.CONSTRAINT_TYPE,
+         A.TABLE_NAME, B.COLUMN_NAME, A.SEARCH_CONDITION
+FROM     user_constraints A
+JOIN     user_cons_columns B
+ON       A.CONSTRAINT_NAME=B.CONSTRAINT_NAME
+WHERE    A.table_name IN (SELECT table_name FROM user_tables)
+ORDER BY table_name;
+
+spool off;
