@@ -114,11 +114,11 @@ spool C:\Users\Jun\Downloads\Sample_Run.txt
 
 host hostname
 
-SET linesize 190
+SET linesize 130
 SET pagesize 50
 
-column machine FORMAT a30
-column username FORMAT a30
+column machine FORMAT a20
+column username FORMAT a20
 SELECT sid, serial#, user#, username, ownerid, server, machine
 FROM   v$session;
 
@@ -136,9 +136,9 @@ SELECT table_name, tablespace_name
 FROM   user_tables;
 
 column OWNER FORMAT a15
-column constraint_name FORMAT a27
-column search_condition FORMAT a89
-column column_name FORMAT a25
+column constraint_name FORMAT a20
+column search_condition FORMAT a35
+column column_name FORMAT a15
 
 SELECT   A.OWNER, A.CONSTRAINT_NAME, A.CONSTRAINT_TYPE,
          A.TABLE_NAME, B.COLUMN_NAME, A.SEARCH_CONDITION
