@@ -211,18 +211,15 @@ CREATE TABLE DIM_menulist
  categoryName   VARCHAR(10)   NOT NULL,
  timeMealID     NUMBER(5)     NOT NULL,
  timeSection    VARCHAR(18)   NOT NULL,
- foodID         NUMBER(5)     NOT NULL,
- itemComboQty   NUMBER(2)     NOT NULL,
  PRIMARY KEY(menulist_key)
 );
 
 --ETL, consider some transformation of the data
 INSERT INTO DIM_menulist
 SELECT dim_menulist_seq.nextval, M.MenuListId, UPPER(M.Name), M.PricePerUnit, M.UnitSold, (M.PricePerUnit * M.UnitSold), 
-       M.RestaurantId, M.categoryID, UPPER(C.Name), M.TimeMealId, UPPER(TM.TimeSection), F.FoodId, IC.Quantity
-FROM MenuList M, Category C, TimeMeal TM, itemCombo IC, Food F
-WHERE (M.categoryID = C.categoryID) AND (M.TimeMealId = TM.TimeMealId)
-      AND (IC.MenuListId = M.MenuListId) AND (IC.FoodId = F.FoodId);
+       M.RestaurantId, M.categoryID, UPPER(C.Name), M.TimeMealId, UPPER(TM.TimeSection)
+FROM MenuList M, Category C, TimeMeal TM
+WHERE (M.categoryID = C.categoryID) AND (M.TimeMealId = TM.TimeMealId);
 
 -- Select to see the data
 SELECT M.MenuListId, M.Name, M.PricePerUnit, M.UnitSold, (M.PricePerUnit * M.UnitSold), 
