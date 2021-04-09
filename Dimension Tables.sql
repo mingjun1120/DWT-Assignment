@@ -204,8 +204,6 @@ CREATE TABLE DIM_menulist
  menuListID     NUMBER(5)     NOT NULL,
  menuName       VARCHAR(100)  NOT NULL,
  pricePerUnit   NUMBER(6,2)   NOT NULL,
- unitSold       NUMBER(6)     NOT NULL,
- total_price    NUMBER(9,2)   NOT NULL,
  rest_ID        NUMBER(5)     NOT NULL,
  categoryID     NUMBER(5)     NOT NULL,
  categoryName   VARCHAR(10)   NOT NULL,
@@ -216,17 +214,60 @@ CREATE TABLE DIM_menulist
 
 --ETL, consider some transformation of the data
 INSERT INTO DIM_menulist
-SELECT dim_menulist_seq.nextval, M.MenuListId, UPPER(M.Name), M.PricePerUnit, M.UnitSold, (M.PricePerUnit * M.UnitSold), 
+
+SELECT dim_menulist_seq.nextval, M.MenuListId, UPPER(M.Name), M.PricePerUnit,
        M.RestaurantId, M.categoryID, UPPER(C.Name), M.TimeMealId, UPPER(TM.TimeSection)
 FROM MenuList M, Category C, TimeMeal TM
 WHERE (M.categoryID = C.categoryID) AND (M.TimeMealId = TM.TimeMealId);
 
 -- Select to see the data
-SELECT M.MenuListId, M.Name, M.PricePerUnit, M.UnitSold, (M.PricePerUnit * M.UnitSold), 
-       M.RestaurantId, M.categoryID, C.Name, M.TimeMealId, TM.TimeSection, F.FoodId, IC.Quantity
-FROM MenuList M, Category C, TimeMeal TM, itemCombo IC, Food F
-WHERE (M.categoryID = C.categoryID) AND (M.TimeMealId = TM.TimeMealId)
-      AND (IC.MenuListId = M.MenuListId) AND (IC.FoodId = F.FoodId);
+SELECT dim_menulist_seq.nextval, M.MenuListId, UPPER(M.Name), M.PricePerUnit,
+       M.RestaurantId, M.categoryID, UPPER(C.Name), M.TimeMealId, UPPER(TM.TimeSection)
+FROM MenuList M, Category C, TimeMeal TM
+WHERE (M.categoryID = C.categoryID) AND (M.TimeMealId = TM.TimeMealId);
+
+
+
+
+-- ------------------------------------------- DIMENSION MENULIST --------------------------------
+-- -- Create dimension menulist sequence
+-- DROP SEQUENCE dim_menulist_seq;
+-- CREATE SEQUENCE dim_menulist_seq
+-- START WITH 10001
+-- INCREMENT BY 1;
+
+-- DROP TABLE DIM_menulist;
+-- CREATE TABLE DIM_menulist
+-- (menulist_key   NUMBER        NOT NULL,
+--  menuListID     NUMBER(5)     NOT NULL,
+--  menuName       VARCHAR(100)  NOT NULL,
+--  pricePerUnit   NUMBER(6,2)   NOT NULL,
+--  unitSold       NUMBER(6)     NOT NULL,
+--  total_price    NUMBER(9,2)   NOT NULL,
+--  rest_ID        NUMBER(5)     NOT NULL,
+--  categoryID     NUMBER(5)     NOT NULL,
+--  categoryName   VARCHAR(10)   NOT NULL,
+--  timeMealID     NUMBER(5)     NOT NULL,
+--  timeSection    VARCHAR(18)   NOT NULL,
+--  foodID         NUMBER(5)     NOT NULL,
+--  itemComboQty   NUMBER(2)     NOT NULL,
+--  PRIMARY KEY(menulist_key)
+-- );
+
+-- --ETL, consider some transformation of the data
+-- INSERT INTO DIM_menulist
+-- SELECT dim_menulist_seq.nextval, M.MenuListId, UPPER(M.Name), M.PricePerUnit, M.UnitSold, (M.PricePerUnit * M.UnitSold), 
+--        M.RestaurantId, M.categoryID, UPPER(C.Name), M.TimeMealId, UPPER(TM.TimeSection), F.FoodId, IC.Quantity
+-- FROM MenuList M, Category C, TimeMeal TM, itemCombo IC, Food F
+-- WHERE (M.categoryID = C.categoryID) AND (M.TimeMealId = TM.TimeMealId)
+--       AND (IC.MenuListId = M.MenuListId) AND (IC.FoodId = F.FoodId);
+
+-- -- Select to see the data
+-- SELECT M.MenuListId, M.Name, M.PricePerUnit, M.UnitSold, (M.PricePerUnit * M.UnitSold), 
+--        M.RestaurantId, M.categoryID, C.Name, M.TimeMealId, TM.TimeSection, F.FoodId, IC.Quantity
+-- FROM MenuList M, Category C, TimeMeal TM, itemCombo IC, Food F
+-- WHERE (M.categoryID = C.categoryID) AND (M.TimeMealId = TM.TimeMealId)
+--       AND (IC.MenuListId = M.MenuListId) AND (IC.FoodId = F.FoodId);
 
 
 
@@ -234,33 +275,63 @@ WHERE (M.categoryID = C.categoryID) AND (M.TimeMealId = TM.TimeMealId)
 ----------------------------------Fact Table-----------------------------------------------
 DROP TABLE sales_fact;
 CREATE TABLE SALES_FACT
-(date_key       NUMBER      NOT NULL,
- promotion_key  NUMBER      NOT NULL,
- users_key      NUMBER      NOT NULL,
- restaurant_key NUMBER      NOT NULL,
- menulist_key   NUMBER      NOT NULL,
- orderid        NUMBER     NOT NULL,
+(date_key       NUMBER        NOT NULL,
+ promotion_key  NUMBER        NOT NULL,
+ users_key      NUMBER        NOT NULL,
+ restaurant_key NUMBER        NOT NULL,
+ menulist_key   NUMBER        NOT NULL,
+ orderid        NUMBER        NOT NULL,
+ orderDateTime  TIMESTAMP     NOT NULL,
+ paymentType    VARCHAR(15)   NOT NULL,
+ discountRate   NUMBER(3,2)   NOT NULL,
+ rating         NUMBER(1)     NOT NULL,
+ pricePerUnit   NUMBER(6,2)   NOT NULL,
+ quantity       NUMBER(3)     NOT NULL,
+ LineTotal      NUMBER(9,2)   NOT NULL,
  amount         NUMBER(7,2)   DEFAULT 0.0,
  discount       NUMBER(7,2)   DEFAULT 0.0,
- Quantity       NUMBER(3)     NOT NULL,       
-PRIMARY KEY(date_key, promotion_key, users_key, restaurant_key, menulist_key, orderid)
+ actualAmountPaid NUMBER(9,2) NOT NULL,
+ PRIMARY KEY(date_key, promotion_key, users_key, restaurant_key, menulist_key, orderid)
 );
+     
+INSERT INTO SALES_Fact
+SELECT date_key, promotion_key, users_key, restaurant_key, menulist_key,
+       O.orderid, O.orderDateTime, O.paymentType,
+       ROUND(P.discountRate/100, 2),
+       O.rating, M.pricePerUnit, OD.quantity,
+       (M.pricePerUnit*OD.quantity) AS LineTotal, O.amount,
+       ((discountRate/100)*(M.pricePerUnit*OD.quantity)) AS discount,
+       (M.pricePerUnit*OD.quantity)-((discountRate/100)*(M.pricePerUnit*OD.quantity)) AS ActualAmountPaid
+FROM Orders O
+   JOIN Dim_Date D
+      ON TRUNC(O.OrderDateTime) = TRUNC(D.cal_date)
+   JOIN DIM_Promotion P
+      ON O.promotionID = P.promotionID
+   JOIN OrderDetails OD
+      ON O.orderID = OD.orderID
+   JOIN Dim_Users U
+      ON O.usersID = U.usersID
+   JOIN Dim_Restaurant R
+      ON O.branchID = R.rest_branchID
+   JOIN DIM_menulist M
+      ON OD.menuListID = M.menuListID;
+-- add where clause
 
-INSERT INTO Sales_Fact
-SELECT date_key, promotion_key, users_key,restaurant_key, menulist_key, A.orderid, A.amount,A.discount, B.Quantity
-FROM DIM_Date D
-     JOIN orders A
-     ON trunc(D.cal_date) = trunc(A.orderDateTime)
-     JOIN orderDetails B
-     ON A.orderID = B.orderID
-     JOIN DIM_menulist C
-     ON B.menuListID = C.menuListID
-     JOIN Dim_Users D
-     ON A.usersID = D.usersID
-     JOIN DIM_Restaurant E
-     ON A.BranchID = E.rest_branchID
-     JOIN DIM_Promotion P
-     ON A.promotionID = P.promotionID;
+-- INSERT INTO Sales_Fact
+-- SELECT date_key, promotion_key, users_key,restaurant_key, menulist_key, A.orderid, A.amount,A.discount, B.Quantity
+-- FROM DIM_Date D
+--      JOIN orders A
+--      ON trunc(D.cal_date) = trunc(A.orderDateTime)
+--      JOIN orderDetails B
+--      ON A.orderID = B.orderID
+--      JOIN DIM_menulist C
+--      ON B.menuListID = C.menuListID
+--      JOIN Dim_Users D
+--      ON A.usersID = D.usersID
+--      JOIN DIM_Restaurant E
+--      ON A.BranchID = E.rest_branchID
+--      JOIN DIM_Promotion P
+--      ON A.promotionID = P.promotionID;
 
 -- ALTER DATABASE DATAFILE 'C:\ORACLEXE\APP\ORACLE\ORADATA\XE\SYSTEM.DBF' AUTOEXTEND ON NEXT 1M MAXSIZE 1024M;
 
