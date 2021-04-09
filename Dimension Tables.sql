@@ -214,6 +214,7 @@ CREATE TABLE DIM_menulist
 
 --ETL, consider some transformation of the data
 INSERT INTO DIM_menulist
+
 SELECT dim_menulist_seq.nextval, M.MenuListId, UPPER(M.Name), M.PricePerUnit,
        M.RestaurantId, M.categoryID, UPPER(C.Name), M.TimeMealId, UPPER(TM.TimeSection)
 FROM MenuList M, Category C, TimeMeal TM
