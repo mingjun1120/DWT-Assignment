@@ -1,4 +1,4 @@
--- =======================================================================================================================
+-- =============================================== Restaurant_Sales_Performance ===============================================
 SET linesize 115
 SET pagesize 240
 CLEAR COLUMNS
@@ -9,9 +9,9 @@ TTITLE OFF
 CLEAR SCREEN
 
 ACCEPT startdate DATE FORMAT 'DD-MON-YY'-
-PROMPT 'Enter start date: '
+PROMPT 'Enter start date (DD-MON-YY): '
 ACCEPT enddate DATE FORMAT 'DD-MON-YY'-
-PROMPT 'Enter end date: '
+PROMPT 'Enter end date (DD-MON-YY): '
 
 SELECT DISTINCT(R.rest_city) AS City
 FROM DIM_Restaurant R, sales_fact S
@@ -24,7 +24,7 @@ ORDER BY R.rest_city;
 ACCEPT city CHAR FORMAT A25-
 PROMPT 'Select city: '
 
-CREATE OR REPLACE VIEW q2a AS
+CREATE OR REPLACE VIEW total_sales1 AS
 SELECT SUM(S.LineTotal) AS Sales
 FROM sales_fact S
 WHERE S.date_key IN (SELECT date_key
@@ -36,7 +36,7 @@ WHERE S.date_key IN (SELECT date_key
                                                WHERE rest_city = UPPER('&city')
                                               );
 
-CREATE OR REPLACE VIEW q2b AS
+CREATE OR REPLACE VIEW total_sales2 AS
 SELECT R.rest_ID AS "Restaurant ID", R.rest_name AS "Restaurant Name", SUM(S.LineTotal) AS Sales
 FROM sales_fact S, DIM_Restaurant R
 WHERE S.date_key IN (SELECT date_key
@@ -53,15 +53,15 @@ RIGHT 'Page: ' FORMAT 999 SQL.PNO SKIP 2
 BREAK ON rest_city SKIP 1;
 COMPUTE SUM LABEL 'TOTAL' OF Total_Sales ON rest_city;
 COLUMN Total_Sales Heading "Total Sales" FORMAT $999,999,999,990.90
-COLUMN Sales_Percentage Heading "Sales Percentage" FORMAT 990.90
+COLUMN Sales_Percentage Heading "Sales Percentage(%)" FORMAT 990.90
 COLUMN rest_ID Heading "Restaurant ID" FORMAT 999999
 COLUMN rest_name Heading "Restaurant Name" FORMAT A30
 COLUMN rest_city Heading "City" FORMAT A25
 CLEAR SCREEN
 
 SELECT R.rest_city, R.rest_ID, R.rest_name,
-       (((SELECT Sales FROM q2b WHERE "Restaurant ID" = R.rest_ID) / (SELECT * FROM q2a))*100) AS Sales_Percentage,
-       (SELECT Sales FROM q2b WHERE "Restaurant ID" = R.rest_ID) AS Total_Sales
+       (((SELECT Sales FROM total_sales2 WHERE "Restaurant ID" = R.rest_ID) / (SELECT * FROM total_sales1))*100) AS Sales_Percentage,
+       (SELECT Sales FROM total_sales2 WHERE "Restaurant ID" = R.rest_ID) AS Total_Sales
 FROM sales_fact S, DIM_Restaurant R
 WHERE R.rest_city = UPPER('&city') AND R.restaurant_key = S.restaurant_key
 GROUP BY R.rest_city, R.rest_ID, R.rest_name
@@ -70,56 +70,7 @@ ORDER BY Sales_Percentage DESC;
 
 
 
--- =======================================================================================================================
-CLEAR COLUMNS
-CLEAR BREAKS
-CLEAR COMPUTES
-CLEAR BUFFER
-TTITLE OFF
-CLEAR SCREEN
-SET LINESIZE 100
-SET PAGESIZE 140
-
-ACCEPT year DATE FORMAT 'YYYY'-
-PROMPT 'Enter year: '
-
-CREATE OR REPLACE VIEW q1a AS
-SELECT R.rest_ID, R.rest_city, SUM(S.LineTotal) AS c_sales
-FROM sales_fact S, dim_date D, DIM_Restaurant R
-WHERE S.date_key = D.date_key AND S.restaurant_key = R.restaurant_key AND D.cal_Year = '&year'
-GROUP BY R.rest_ID, R.rest_city
-ORDER BY R.rest_city;
-
-CREATE OR REPLACE VIEW q1b AS
-SELECT D.cal_quarter, R.rest_ID, R.rest_city, SUM(S.LineTotal) AS o_sales
-FROM sales_fact S, dim_date D, DIM_Restaurant R
-WHERE S.date_key = D.date_key AND S.restaurant_key = R.restaurant_key AND D.cal_Year = '&year'
-GROUP BY R.rest_ID, R.rest_city, D.cal_quarter
-ORDER BY R.rest_city;
-
-
-TTITLE CENTER '============================================================' SKIP 1 -
-CENTER 'Quarter Sales Rate of Restaurants in the Year ' '&year' SKIP 1 -
-CENTER '============================================================' -
-RIGHT 'Page: ' FORMAT 999 SQL.PNO SKIP 2
-
-BREAK ON rest_ID ON rest_city SKIP 1
-COMPUTE SUM LABEL 'TOTAL' OF Sales ON rest_city SKIP 3
-
-COLUMN Sales FORMAT $999,999,999,990.90
-COLUMN QUARTER_SALES_RATE Heading "Quarter Sales Rate(%)" FORMAT 990.90
-COLUMN rest_ID Heading "Restaurant ID" FORMAT 99999
-COLUMN rest_city Heading "City" FORMAT A25
-COLUMN cal_quarter Heading "Quarter" FORMAT A7
-CLEAR SCREEN
-SELECT A.rest_city, A.rest_ID, A.cal_quarter, A.o_sales AS Sales, ((A.o_sales/B.c_sales)*100) AS QUARTER_SALES_RATE
-FROM q1b A, q1a B
-WHERE A.rest_ID = B.rest_ID AND A.rest_city = B.rest_city;
--- WHERE A.rest_ID = B.rest_ID AND A.rest_city = 'AMPANG' AND B.rest_city = 'AMPANG'
--- ORDER BY A.rest_city, A.rest_ID, A.cal_quarter;
-
-
--- =======================================================================================================================
+-- =============================================== Top_5_Restaurant_In_State ===============================================
 CLEAR COLUMNS
 CLEAR BREAKS
 CLEAR COMPUTES
@@ -202,4 +153,107 @@ RIGHT 'Page: ' FORMAT 999 SQL.PNO SKIP 2
 SELECT A.rest_name, A.rest_TypeName, A.Sales AS "Sales (Before)", A.Rank AS "Rank (Before)", B.Sales AS "Sales (After)", B.Rank AS "Rank (After)"
 FROM ranked_top5_restaurant A, ranked_all_restaurant B
 WHERE A.rest_name = B.rest_name
-ORDER BY A.Sales desc;
+ORDER BY A.Sales DESC;
+
+
+
+
+-- =============================================== Top_5_Restaurant_In_State ===============================================
+CLEAR COLUMNS
+CLEAR BREAKS
+CLEAR COMPUTES
+CLEAR BUFFER
+TTITLE OFF
+CLEAR SCREEN
+SET LINESIZE 140
+SET PAGESIZE 100
+
+ACCEPT currentyear DATE FORMAT 'YYYY'-
+PROMPT 'Enter current year (YYYY): '
+
+CLEAR SCREEN
+
+CREATE OR REPLACE VIEW currentYear_RestCity AS
+SELECT DISTINCT(R.rest_city)
+FROM DIM_Restaurant R, Sales_Fact S
+WHERE S.date_key IN (SELECT date_key FROM Dim_Date WHERE cal_Year = '&currentyear') AND R.restaurant_key = R.restaurant_key
+ORDER BY R.rest_city;
+
+CREATE OR REPLACE VIEW previousYear_RestCity AS
+SELECT DISTINCT(R.rest_city)
+FROM DIM_Restaurant R, Sales_Fact S
+WHERE S.date_key IN (SELECT date_key FROM Dim_Date WHERE cal_Year = ('&currentyear'-'1')) AND R.restaurant_key = R.restaurant_key
+ORDER BY R.rest_city;
+
+SELECT A.rest_city
+FROM currentYear_RestCity A INNER JOIN previousYear_RestCity B ON A.rest_city = B.rest_city;
+
+ACCEPT city CHAR FORMAT A30-
+PROMPT 'Select city: '
+
+CLEAR SCREEN
+
+SELECT DISTINCT(R.rest_ID), R.rest_name
+FROM DIM_Restaurant R, Sales_Fact S
+WHERE S.date_key IN (SELECT date_key FROM Dim_Date WHERE cal_Year = '&currentyear') 
+      AND R.rest_city = UPPER('&city') 
+      AND R.restaurant_key = S.restaurant_key
+ORDER BY R.rest_ID;
+
+ACCEPT restaurant_id_input NUMBER FORMAT 99999-
+PROMPT 'Enter restaurant ID to select: '
+
+CLEAR SCREEN
+
+CREATE OR REPLACE VIEW currentYear_Total AS
+SELECT DISTINCT(M.menulistID), M.menuName, M.categoryName, SUM(S.LineTotal) AS totalCurrent
+FROM Sales_Fact S, DIM_menulist M
+WHERE S.date_key IN (SELECT date_key FROM Dim_Date WHERE cal_Year = '&currentyear')
+      AND S.restaurant_key IN (SELECT restaurant_key FROM DIM_Restaurant WHERE rest_ID = '&restaurant_id_input')
+      AND S.menulist_key IN (SELECT menulist_key FROM DIM_menulist)
+      AND S.menulist_key = M.menulist_key
+GROUP BY M.menulistID, M.menuName, M.categoryName;
+
+CREATE OR REPLACE VIEW previousYear_Total AS
+SELECT DISTINCT(M.menulistID), M.menuName, M.categoryName, SUM(S.LineTotal) AS totalPrevious
+FROM Sales_Fact S, DIM_menulist M
+WHERE S.date_key IN (SELECT date_key FROM Dim_Date WHERE cal_Year = ('&currentyear'-'1'))
+      AND S.restaurant_key IN (SELECT restaurant_key FROM DIM_Restaurant WHERE rest_ID = '&restaurant_id_input')
+      AND S.menulist_key IN (SELECT menulist_key FROM DIM_menulist)
+      AND S.menulist_key = M.menulist_key
+GROUP BY M.menulistID, M.menuName, M.categoryName;
+
+CREATE OR REPLACE VIEW q4e AS
+SELECT A.menulistID, A.menuName, A.categoryName, A.totalCurrent, B.totalPrevious, (A.totalCurrent - B.totalPrevious) AS Difference, (((A.totalCurrent - B.totalPrevious)/(B.totalPrevious))*100) AS Growth_Rate_P
+FROM currentYear_Total A INNER JOIN previousYear_Total B ON A.menulistID = B.menulistID;
+
+CLEAR SCREEN
+
+COLUMN current_year HEADING "Current Year" FORMAT $9,999,999,990.90
+COLUMN previous_year HEADING "Previous Year" FORMAT $9,999,999,990.90
+COLUMN grwoth_rate HEADING "Growth(%)" FORMAT 990.90
+COLUMN categoryName HEADING "Category" FORMAT A10
+COLUMN menuName HEADING "Menu Name" FORMAT A40
+COLUMN menulistID HEADING "Menu ID" FORMAT 99999
+COLUMN Sales_Performance_Status HEADING "Performance Status" FORMAT A30
+
+TTITLE CENTER '===================================================================================' SKIP 1 -
+CENTER 'Menu Sales Comparison of Restaurant '&restaurant_id_input'('&city') of Year '&currentyear' and Previous Year' SKIP 1 -
+CENTER '===================================================================================' -
+RIGHT 'Page: ' FORMAT 999 SQL.PNO SKIP 2
+
+BREAK ON categoryName SKIP 1;
+COMPUTE SUM LABEL 'TOTAL' OF current_year ON categoryName;
+COMPUTE SUM LABEL 'TOTAL' OF previous_year ON categoryName;
+COMPUTE SUM LABEL 'TOTAL' OF grwoth_rate ON categoryName;
+
+SELECT categoryName, menulistID, menuName,
+       totalCurrent AS current_year, totalPrevious AS previous_year, 
+       Growth_Rate_P AS grwoth_rate,
+       CASE
+           WHEN Growth_Rate_P < 0 THEN 'Decrease'
+           WHEN Growth_Rate_P > 0 THEN 'Increase'
+           ELSE 'No Change'
+       END Sales_Performance_Status
+FROM q4e
+ORDER BY categoryName ASC;
