@@ -52,7 +52,7 @@ CENTER '========================================================================
 RIGHT 'Page: ' FORMAT 999 SQL.PNO SKIP 2
 BREAK ON rest_city SKIP 1;
 COMPUTE SUM LABEL 'TOTAL' OF Total_Sales ON rest_city;
-COLUMN Total_Sales Heading "Total Sales" FORMAT $999,999,999,990.90
+COLUMN Total_Sales Heading "Total Sales(RM)" FORMAT 999,999,999,990.90
 COLUMN Sales_Percentage Heading "Sales Percentage(%)" FORMAT 990.90
 COLUMN rest_ID Heading "Restaurant ID" FORMAT 999999
 COLUMN rest_name Heading "Restaurant Name" FORMAT A30
@@ -77,7 +77,7 @@ CLEAR COMPUTES
 CLEAR BUFFER
 TTITLE OFF
 CLEAR SCREEN
-SET LINESIZE 130
+SET LINESIZE 138
 SET PAGESIZE 100
 
 ACCEPT start_date1 DATE FORMAT 'DD-MON-YY'-
@@ -142,15 +142,15 @@ SELECT * FROM rank_all_restaurant;
 
 COLUMN rest_name Heading "Restaurant Name" FORMAT A50
 COLUMN rest_TypeName Heading "Restaurant Type" FORMAT A20
-COLUMN "Sales (Before)" FORMAT 999999990.90
-COLUMN "Sales (After)" FORMAT 999999990.90
+COLUMN Sales_in_RM_Before Heading "Sales in RM (Before)" FORMAT 9,999,999,990.90
+COLUMN Sales_in_RM_After Heading "Sales in RM (After)" FORMAT 9,999,999,990.90
 
-TTITLE CENTER '===================================================================================' SKIP 1 -
-CENTER 'Rank of Top 5 Restaurant''s Sales in state ' '&state' ' from ' '&start_date1' ' to ' '&end_date1' SKIP 1 -
-CENTER '===================================================================================' -
+TTITLE CENTER '================================================================================================================================' SKIP 1 -
+CENTER 'Rank of Top 5 Restaurant''s Sales in state ' '&state' ' from ' '&start_date1' ' to ' '&end_date1' ' and from ' '&start_date2' ' to ' '&end_date2' SKIP 1 -
+CENTER '================================================================================================================================' SKIP 1 -
 RIGHT 'Page: ' FORMAT 999 SQL.PNO SKIP 2
 
-SELECT A.rest_name, A.rest_TypeName, A.Sales AS "Sales (Before)", A.Rank AS "Rank (Before)", B.Sales AS "Sales (After)", B.Rank AS "Rank (After)"
+SELECT A.rest_name, A.rest_TypeName, A.Sales AS Sales_in_RM_Before, A.Rank AS "Rank (Before)", B.Sales AS Sales_in_RM_After, B.Rank AS "Rank (After)"
 FROM ranked_top5_restaurant A, ranked_all_restaurant B
 WHERE A.rest_name = B.rest_name
 ORDER BY A.Sales DESC;
@@ -158,7 +158,7 @@ ORDER BY A.Sales DESC;
 
 
 
--- =============================================== Top_5_Restaurant_In_State ===============================================
+-- =============================================== Sales_Comparison_of_Each_Menu ===============================================
 CLEAR COLUMNS
 CLEAR BREAKS
 CLEAR COMPUTES
@@ -185,15 +185,15 @@ FROM DIM_Restaurant R, Sales_Fact S
 WHERE S.date_key IN (SELECT date_key FROM Dim_Date WHERE cal_Year = ('&currentyear'-'1')) AND R.restaurant_key = R.restaurant_key
 ORDER BY R.rest_city;
 
-SELECT A.rest_city
+SELECT A.rest_city AS "City"
 FROM currentYear_RestCity A INNER JOIN previousYear_RestCity B ON A.rest_city = B.rest_city;
 
 ACCEPT city CHAR FORMAT A30-
-PROMPT 'Select city: '
+PROMPT 'Select a city: '
 
 CLEAR SCREEN
 
-SELECT DISTINCT(R.rest_ID), R.rest_name
+SELECT DISTINCT(R.rest_ID) AS "Restaurant ID", R.rest_name AS "Restaurant Name"
 FROM DIM_Restaurant R, Sales_Fact S
 WHERE S.date_key IN (SELECT date_key FROM Dim_Date WHERE cal_Year = '&currentyear') 
       AND R.rest_city = UPPER('&city') 
@@ -229,8 +229,8 @@ FROM currentYear_Total A INNER JOIN previousYear_Total B ON A.menulistID = B.men
 
 CLEAR SCREEN
 
-COLUMN current_year HEADING "Current Year" FORMAT $9,999,999,990.90
-COLUMN previous_year HEADING "Previous Year" FORMAT $9,999,999,990.90
+COLUMN current_year HEADING "Current Year(RM)" FORMAT 9,999,999,990.90
+COLUMN previous_year HEADING "Previous Year(RM)" FORMAT 9,999,999,990.90
 COLUMN grwoth_rate HEADING "Growth(%)" FORMAT 990.90
 COLUMN categoryName HEADING "Category" FORMAT A10
 COLUMN menuName HEADING "Menu Name" FORMAT A40
