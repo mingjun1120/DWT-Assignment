@@ -9,18 +9,10 @@ CLEAR COMPUTES
 CLEAR BUFFER
 TTITLE OFF
 
-SET LINESIZE 100
-SET PAGESIZE 140
-CLEAR COLUMNS
-CLEAR BREAKS
-CLEAR COMPUTES
-CLEAR BUFFER
-TTITLE OFF
-
 ACCEPT year DATE FORMAT 'YYYY'-
 PROMPT 'Enter Year (YYYY): '
 
-COLUMN Sales FORMAT $999,999,999,990.90
+COLUMN Sales HEADING "Sales (RM)" FORMAT 999,999,999,990.90
 COLUMN QUARTER_SALES_RATE Heading "Quarter Sales Rate(%)" FORMAT 990.90
 COLUMN rest_ID Heading "Restaurant ID" FORMAT 99999
 COLUMN rest_city Heading "City" FORMAT A25
@@ -59,6 +51,7 @@ WHERE    A.rest_ID = B.rest_ID AND
 ORDER BY A.rest_city, A.rest_ID, A.cal_quarter;
 
 START D:\Text\sql_files\report1.sql
+spool D:\Text\sql_files\spool1.txt
 
 -- ------------------------------------ Report 2 --------------------------------------------
 
@@ -81,8 +74,8 @@ PROMPT 'Enter State            : '
 
 COLUMN state Heading "State" FORMAT A15
 COLUMN year Heading "Year"
-COLUMN Sales Heading "Current Year Sales" FORMAT $999,999,999.99
-COLUMN Previous_year_sales Heading "Previous Year Sales" FORMAT $999,999,999.99
+COLUMN Sales Heading "Current Year Sales (RM)" FORMAT 999,999,999.99
+COLUMN Previous_year_sales Heading "Previous Year Sales (RM)" FORMAT 999,999,999.99
 COLUMN Growth (%) FORMAT 99999.99
 SET linesize 100
 SET pagesize 100
@@ -109,6 +102,7 @@ SELECT Growth.*,
 FROM Growth;
 
 START D:\Text\sql_files\report2.sql
+spool D:\Text\sql_files\spool2.txt
 
 -- ------------------------------------ Report 3 --------------------------------------------
 
@@ -130,7 +124,7 @@ ACCEPT r3_state CHAR FORMAT 'A70'-
 PROMPT 'Enter State            : '
 
 COLUMN city FORMAT HEADING "City" A20
-COLUMN "Total Sales" FORMAT $999,999,999.99
+COLUMN "Total Sales (RM)" FORMAT 999,999,999.99
 COLUMN Contribution HEADING "Contribution (%)" FORMAT 90.9999
 COLUMN user_id HEADING "Customer No."
 
@@ -174,3 +168,4 @@ GROUP BY B.usersID, B.City, B."Total Sales", A."Total Sales"
 ORDER BY Contribution DESC;
 
 START D:\Text\sql_files\report3.sql
+spool D:\Text\sql_files\spool3.txt
